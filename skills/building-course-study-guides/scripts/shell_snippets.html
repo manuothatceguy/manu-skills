@@ -1,0 +1,173 @@
+<!-- Reusable pieces of the guide's HTML shell. Drop into 00-header / 99-footer.
+     Swap the palette in :root for the subject. These are the bits worth NOT
+     re-deriving: math CSS, callout classes, exercise class, print rules, and
+     the TOC-scrollspy + open-details-before-print JS. -->
+
+<style>
+  /* --- MathML: native, no JS, no CDN (Artifact CSP blocks external hosts) --- */
+  math{font-size:1.06em;font-family:"Latin Modern Math","STIX Two Math","Cambria Math",serif}
+  math[display="block"]{display:block;margin:14px 0;overflow-x:auto;overflow-y:hidden;text-align:center}
+  .formula{background:var(--card);border:1px solid var(--rule);padding:15px 18px;overflow-x:auto}
+  /* Título de una caja de fórmulas. Va como HTML y no como fila del \begin{aligned}: adentro
+     del mtable cae en la primera columna, que es angosta porque la dimensiona un s'_A, y el
+     texto se corta a la mitad */
+  .formula .fcap{display:block;font-family:sans-serif;font-size:12px;letter-spacing:.09em;
+    text-transform:uppercase;color:var(--muted);font-weight:650;margin-bottom:8px}
+  .formula math[display="block"]:first-child{margin-top:0}
+  .formula math[display="block"]:last-child{margin-bottom:0}
+  .mathfail{background:#fdd;color:#900;border:1px dashed #900}   /* failed compile shows up loud */
+
+  /* --- callouts (square, engineering-report look): recap/tip/bug/practice --- */
+  .recap,.tip,.bug,.practice{margin:20px 0;padding:15px 18px}
+  /* El > es obligatorio. Con el selector descendiente, cualquier <strong> que sea primer hijo de
+     SU padre se come el estilo de título: un <strong> adentro de un <td> o de un <p> del callout
+     sale en mayúsculas, en rojo y como bloque, y parte el renglón al medio */
+  .recap > strong:first-child,.tip > strong:first-child,.bug > strong:first-child{display:block;
+    font-family:sans-serif;font-size:11px;letter-spacing:.13em;text-transform:uppercase;
+    font-weight:650;margin-bottom:5px}
+  .recap > strong:first-child{color:var(--accent)}
+  .tip > strong:first-child{color:var(--teal)}
+  .bug > strong:first-child{color:var(--brick)}
+  .recap{background:var(--card);border-top:2px solid var(--accent)}
+  .tip{background:var(--teal-bg);border-top:2px solid var(--teal)}
+  .bug{background:var(--brick-bg);border-top:2px solid var(--brick)}
+  .practice{background:var(--plum-bg);border-top:2px solid var(--plum);font-size:14px}
+  .practice::before{content:"Práctica";display:block;font-size:11px;letter-spacing:.13em;
+    text-transform:uppercase;color:var(--plum);font-weight:650;margin-bottom:4px}
+
+  /* --- exercise block (section 7) --- */
+  .ex{margin:24px 0;padding:16px 18px;background:var(--card);border-left:3px solid var(--accent)}
+  .ex>p:first-child{display:flex;justify-content:space-between;gap:12px;font-family:sans-serif}
+  .cred{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+
+  /* --- interactive multiple-choice mini-quiz (clickable, marks right/wrong on Corregir) ---
+     Markup contract constructors must follow EXACTLY (the JS below wires it):
+       <div class="quiz" data-multi="true">
+         <p class="qz-q">question, may hold inline \( ... \)</p>
+         <ul class="qz-opts">
+           <li data-c="1">correct option</li>   (data-c="1" correct, "0" wrong; 0/1/many may be correct)
+           <li data-c="0">plausible distractor</li>
+         </ul>
+         <button class="qz-check">Corregir</button>
+         <div class="qz-fb">why, short</div>
+       </div>  -->
+  .quiz{margin:22px 0;padding:15px 18px 16px;background:var(--card);border:1px solid var(--rule);border-left:3px solid var(--accent)}
+  .quiz::before{content:"Quiz · marcá todas las correctas";display:block;font-family:sans-serif;font-size:11px;
+    letter-spacing:.11em;text-transform:uppercase;color:var(--accent);font-weight:700;margin-bottom:9px}
+  .quiz .qz-q{font-family:sans-serif;font-size:15px;line-height:1.5;margin:0 0 12px}
+  .qz-opts{list-style:none;margin:0 0 12px;padding:0;font-family:sans-serif;font-size:14.5px}
+  .qz-opts li{position:relative;padding:9px 12px 9px 40px;margin:7px 0;border:1px solid var(--rule);
+    background:var(--paper);cursor:pointer;border-radius:3px;transition:border-color .12s,background .12s;line-height:1.45}
+  .qz-opts li::before{content:"";position:absolute;left:13px;top:11px;width:16px;height:16px;
+    border:1.5px solid var(--muted);border-radius:3px;background:var(--card);box-sizing:border-box}
+  .qz-opts li.sel{border-color:var(--accent);background:var(--accent-bg)}
+  .qz-opts li.sel::before{background:var(--accent);border-color:var(--accent)}
+  .qz-opts li.sel::after{content:"✓";position:absolute;left:16px;top:9px;color:var(--paper);font-size:12px;font-weight:800}
+  .quiz.done .qz-opts li{cursor:default}
+  .quiz.done .qz-opts li[data-c="1"]{border-color:var(--teal);background:var(--teal-bg)}
+  .quiz.done .qz-opts li[data-c="1"]::before{border-color:var(--teal);background:var(--teal)}
+  .quiz.done .qz-opts li[data-c="1"]::after{content:"✓";left:16px;color:var(--paper)}
+  .quiz.done .qz-opts li.sel[data-c="0"]{border-color:var(--brick);background:var(--brick-bg)}
+  .quiz.done .qz-opts li.sel[data-c="0"]::before{border-color:var(--brick);background:var(--brick)}
+  .quiz.done .qz-opts li.sel[data-c="0"]::after{content:"✗";left:16px;color:var(--paper)}
+  .qz-check{font-family:sans-serif;font-size:13px;font-weight:600;color:var(--accent);background:var(--card);
+    border:1px solid var(--rule);padding:7px 16px;cursor:pointer;border-radius:3px}
+  .qz-check:hover{border-color:var(--accent)}
+  .qz-check:focus-visible,.qz-opts li:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  .qz-fb{display:none;margin-top:12px;padding:10px 14px;font-family:sans-serif;font-size:14px;line-height:1.5;
+    border-left:2px solid var(--accent);background:var(--accent-bg)}
+  .quiz.done .qz-fb{display:block}
+  .qz-verdict{font-weight:700}
+  .qz-verdict.ok{color:var(--teal)}
+  .qz-verdict.no{color:var(--brick)}
+
+  /* --- wide content scrolls in its own box, never the page body --- */
+  .scroll,pre{overflow-x:auto;max-width:100%}
+  table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}
+
+  /* --- print / export to PDF --- */
+  @media print{
+    :root{--paper:#fff;--card:#fff;--ink:#000;--grid:transparent}
+    body{background:#fff;background-image:none;font-size:10.5pt}
+    .rail,.printbtn{display:none}
+    .wrap,main{display:block;max-width:none;padding:0}
+    section{break-before:page;border-top:0}
+    section:first-of-type{break-before:auto}
+    h1,h2,h3,h4{break-after:avoid}
+    .formula,.recap,.tip,.bug,.practice,table,details,math[display="block"]{break-inside:avoid}
+    details>*:not(summary){display:block !important}     /* hidden answers must show on paper */
+    summary{list-style:none}
+    summary::before{content:"" !important}
+    .quiz{break-inside:avoid}
+    .qz-check{display:none}                              /* on paper: reveal correct answers + feedback */
+    .qz-opts li[data-c="1"]{border-color:var(--teal)}
+    .qz-opts li[data-c="1"]::after{content:"✓";left:16px;top:9px;color:var(--teal)}
+    .qz-fb{display:block}
+  }
+</style>
+
+<!-- put this button in the nav rail: <button class="printbtn" id="print">Imprimir / PDF</button> -->
+
+<script>
+  // TOC scrollspy: highlight the current section's link.
+  (function () {
+    var links = [].slice.call(document.querySelectorAll('#toc a')), map = {};
+    links.forEach(function (a) { var el = document.querySelector(a.getAttribute('href')); if (el) map[el.id] = a; });
+    var obs = new IntersectionObserver(function (es) {
+      es.forEach(function (e) {
+        if (!e.isIntersecting) return;
+        links.forEach(function (a) { a.classList.remove('on'); });
+        if (map[e.target.id]) map[e.target.id].classList.add('on');
+      });
+    }, { rootMargin: '-15% 0px -75% 0px' });
+    Object.keys(map).forEach(function (id) { obs.observe(document.getElementById(id)); });
+  })();
+
+  // Wire the interactive mini-quizzes. First click on "Corregir" grades (correct options go
+  // green, your wrong picks red, .qz-fb reveals with a verdict); second click resets to retry.
+  (function () {
+    document.querySelectorAll('.quiz').forEach(function (q) {
+      var opts = [].slice.call(q.querySelectorAll('.qz-opts li'));
+      var btn = q.querySelector('.qz-check'), fb = q.querySelector('.qz-fb');
+      opts.forEach(function (li) {
+        li.setAttribute('tabindex', '0'); li.setAttribute('role', 'checkbox'); li.setAttribute('aria-checked', 'false');
+        function toggle() {
+          if (q.classList.contains('done')) return;
+          li.classList.toggle('sel');
+          li.setAttribute('aria-checked', li.classList.contains('sel') ? 'true' : 'false');
+        }
+        li.addEventListener('click', toggle);
+        li.addEventListener('keydown', function (e) { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); toggle(); } });
+      });
+      if (!btn) return;
+      btn.addEventListener('click', function () {
+        if (!q.classList.contains('done')) {
+          q.classList.add('done');
+          var ok = opts.every(function (li) { return (li.getAttribute('data-c') === '1') === li.classList.contains('sel'); });
+          if (fb) { var v = document.createElement('span'); v.className = 'qz-verdict ' + (ok ? 'ok' : 'no');
+            v.textContent = ok ? '✓ Correcto. ' : '✗ Revisá. '; fb.insertBefore(v, fb.firstChild); }
+          btn.textContent = 'Reintentar';
+        } else {
+          q.classList.remove('done');
+          opts.forEach(function (li) { li.classList.remove('sel'); li.setAttribute('aria-checked', 'false'); });
+          if (fb) { var v = fb.querySelector('.qz-verdict'); if (v) v.remove(); }
+          btn.textContent = 'Corregir';
+        }
+      });
+    });
+  })();
+
+  // Before printing, open every <details> so answers appear on paper; restore after.
+  (function () {
+    var wasClosed = [];
+    window.addEventListener('beforeprint', function () {
+      wasClosed = [];
+      document.querySelectorAll('details').forEach(function (d) { if (!d.open) { wasClosed.push(d); d.open = true; } });
+    });
+    window.addEventListener('afterprint', function () {
+      wasClosed.forEach(function (d) { d.open = false; }); wasClosed = [];
+    });
+    var b = document.getElementById('print');
+    if (b) b.addEventListener('click', function () { window.print(); });
+  })();
+</script>

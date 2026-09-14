@@ -1,0 +1,12 @@
+# Local copies of Uncle Bob's repos, some are not licensed for redistribution
+research/sources/
+
+# I keep the full text of the harvested tweets local, the timeline has short quotes and links
+research/ai-tweets-2026.md
+research/harvest/tweets.jsonl
+research/harvest/progress.log
+research/harvest/nohup.out
+research/tweets/
+
+__pycache__/
+*.pyc
