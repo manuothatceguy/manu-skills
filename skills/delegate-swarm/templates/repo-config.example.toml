@@ -1,0 +1,22 @@
+# delegate-swarm settings for THIS repo. Commit this file.
+# Only set what differs from the defaults (see config.default.toml in the skill).
+
+[verify]
+# Command that proves the whole repo is fine. Used when a task has no `accept`,
+# and after `ship --mode merge`. Examples: "npm test", "pytest -q", "make test", "cargo test".
+accept = ""
+# Runs once in every fresh worktree before the worker starts (dependencies, codegen).
+# Examples: "npm ci --silent", "pip install -q -e .", "".
+setup = ""
+
+[capsules]
+# Capsules every task in this repo gets. Keep it minimal; add more per task.
+# Example for a vault repo: ["memory-vault#structure,master-files"]
+default = []
+
+# [run]
+# base = "main"
+# max_parallel = 5
+
+# [scope]
+# always_allowed = ["package-lock.json"]

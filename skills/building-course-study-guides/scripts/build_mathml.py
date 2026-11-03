@@ -1,84 +1,100 @@
 #!/usr/bin/env python3
-"""Assemble HTML fragments and compile their LaTeX to MathML with pandoc.
+"""Assemble ordered HTML fragments and compile their LaTeX to MathML."""
 
-This is the controller's build step. Constructors write fragments with math as
-LaTeX (\\[ ... \\] display, \\( ... \\) inline); this concatenates them in ORDER
-and turns every formula into native MathML that renders with no JS and no CDN
-(the Artifact CSP blocks both).
+import argparse
+import html
+import re
+import subprocess
+import sys
+from pathlib import Path
 
-Why pandoc and not latex2mathml: latex2mathml silently breaks \\begin{aligned}
-(literal & , no row stacking), so multi-line derivations overflow on one line.
-pandoc emits a real <mtable>. See SKILL.md "Math" section.
 
-Edit PARTS, OUT, ORDER for your guide, then: python3 build_mathml.py
-It self-verifies and exits non-zero on any problem.
-"""
-import re, sys, html, subprocess
+MATH_TOKEN = re.compile(r"\\\[(.+?)\\\]|\\\((.+?)\\\)", re.S)
+PROTECTED_BLOCK = re.compile(r"<!--.*?-->|<(pre|code|script|style)\b[^>]*>.*?</\1\s*>", re.S | re.I)
+RAW_LATEX = re.compile(r"\\(?:\[|\]|\(|\)|[A-Za-z]{2,})")
 
-PARTS = "CHANGE_ME/parts"
-OUT   = "CHANGE_ME/guia.html"
-ORDER = ["00-header", "02-unit", "..."]   # fragment basenames, in document order
 
-src = "\n".join(open(f"{PARTS}/{p}.html").read() for p in ORDER)
+def compile_math(source):
+    protected = []
+    tokens = []
 
-# Pull every math token out in document order, leaving a placeholder.
-tokens = []
-def grab(m):
-    tokens.append(("block" if m.group(0).startswith(r"\[") else "inline", m.group(1)))
-    return f"@@MATH{len(tokens)-1}@@"
-staged = re.sub(r"\\\[(.+?)\\\]", grab, src, flags=re.S)     # \[ \] first (may contain parens)
-staged = re.sub(r"\\\((.+?)\\\)", grab, staged, flags=re.S)
+    def hide(match):
+        protected.append(match.group(0))
+        return f"@@PROTECTED{len(protected) - 1}@@"
 
-# One pandoc call for ALL formulas (spawning per-formula is far too slow at ~1500).
-# .strip() the token: pandoc does NOT treat "$ x $" (a space right after the opening $)
-# as inline math, so an inline \( x \) a constructor wrote with spaces silently drops and
-# the stray $ then mis-pairs with a later one, cascading and losing ~half the formulas.
-md = "\n\n<!--SEP-->\n\n".join(
-    (f"$${html.unescape(t).strip()}$$" if k == "block" else f"${html.unescape(t).strip()}$") for k, t in tokens)
-proc = subprocess.run(["pandoc", "--mathml", "-f", "markdown", "-t", "html"],
-                      input=md, capture_output=True, text=True)
-if proc.returncode != 0:
-    sys.exit("pandoc failed:\n" + proc.stderr)
+    def extract(match):
+        kind = "block" if match.group(1) is not None else "inline"
+        tokens.append((kind, match.group(1) or match.group(2)))
+        return f"@@MATH{len(tokens) - 1}@@"
 
-maths = re.findall(r"<math\b.*?</math>", proc.stdout, flags=re.S)
-if len(maths) != len(tokens):
-    # A dropped formula = an unsupported command (e.g. \xleftrightarrow / mathtools arrows).
-    # Find it with find_bad_formula.py, then rewrite with \overset/\underset/\rightleftharpoons.
-    sys.exit(f"MISMATCH: {len(tokens)} formulas in, {len(maths)} out. Run find_bad_formula.py.")
+    staged = PROTECTED_BLOCK.sub(hide, source)
+    staged = MATH_TOKEN.sub(extract, staged)
+    if not tokens:
+        if RAW_LATEX.search(staged):
+            raise ValueError("uncompiled LaTeX remains in the assembled HTML")
+        return source, 0, 0
 
-def clean(mathml, kind):
-    mathml = re.sub(r"<annotation\b.*?</annotation>", "", mathml, flags=re.S)  # drop the x-tex source
-    mathml = mathml.replace("<semantics>", "").replace("</semantics>", "")
-    if kind == "block" and 'display="block"' not in mathml:
-        mathml = mathml.replace("<math ", '<math display="block" ', 1)
-    return mathml
+    markdown = "\n\n<!--SEP-->\n\n".join(
+        f"$${html.unescape(value).strip()}$$" if kind == "block" else f"${html.unescape(value).strip()}$"
+        for kind, value in tokens
+    )
+    result = subprocess.run(
+        ["pandoc", "--mathml", "-f", "markdown", "-t", "html"],
+        input=markdown,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if result.returncode:
+        raise ValueError(f"pandoc failed: {result.stderr.strip()}")
 
-out = staged
-for i, ((kind, _), mathml) in enumerate(zip(tokens, maths)):
-    out = out.replace(f"@@MATH{i}@@", clean(mathml, kind), 1)
-open(OUT, "w").write(out)
+    converted = re.findall(r"<math\b.*?</math>", result.stdout, flags=re.S)
+    if len(converted) != len(tokens):
+        raise ValueError(
+            f"{len(tokens)} formulas in, {len(converted)} out. "
+            "Run find_bad_formula.py on the fragments to locate unsupported LaTeX"
+        )
 
-# --- self-verification: these caught every real bug in practice ---
-problems = []
-if "@@MATH" in out:
-    problems.append("unsubstituted @@MATH placeholders")
-if re.search(r"\\\[|\\\(|\\frac|\\begin\{|\\lambda|\\cdot", out):
-    problems.append("raw LaTeX left outside <math> (missing delimiter?)")
-if re.search(r"<mi>&(?:amp;)?</mi>", out):
-    problems.append("literal <mi>&</mi>: an aligned block did not become an <mtable>")
-aligned_in = sum(1 for _, t in tokens if r"\begin{aligned}" in t or r"\\" in t)
-if aligned_in > out.count("<mtable"):
-    problems.append(f"{aligned_in} multi-line formulas but only {out.count('<mtable')} <mtable>")
-for tag in ["div", "table", "details", "summary", "tr", "td", "th", "section", "math", "p"]:
-    o = len(re.findall(f"<{tag}[ >]", out)); c = out.count(f"</{tag}>")
-    # note: one <div> stays open on purpose if your shell .wrap spans header->footer
-    if o != c and not (tag == "div" and o - c == 1):
-        problems.append(f"tag imbalance <{tag}>: {o} open / {c} close")
+    for index, ((kind, _), mathml) in enumerate(zip(tokens, converted)):
+        mathml = re.sub(r"<annotation\b.*?</annotation>", "", mathml, flags=re.S)
+        mathml = mathml.replace("<semantics>", "").replace("</semantics>", "")
+        if kind == "block" and 'display="block"' not in mathml:
+            mathml = mathml.replace("<math ", '<math display="block" ', 1)
+        staged = staged.replace(f"@@MATH{index}@@", mathml, 1)
 
-block = sum(1 for k, _ in tokens if k == "block")
-print(f"wrote {OUT}  ({len(out)} bytes)  MathML: {block} display, {len(tokens)-block} inline, {out.count('<mtable')} mtable")
-if problems:
-    print("\n!! PROBLEMS:")
-    for p in problems: print("  -", p)
-    sys.exit(1)
-print("all formulas compiled, structure balanced.")
+    if "@@MATH" in staged or RAW_LATEX.search(staged):
+        raise ValueError("uncompiled LaTeX remains in the assembled HTML")
+    if re.search(r"<mi>&(?:amp;)?</mi>", staged):
+        raise ValueError("an aligned formula contains a literal ampersand")
+
+    multiline = sum(1 for _, value in tokens if r"\begin{aligned}" in value or r"\\" in value)
+    if multiline > staged.count("<mtable"):
+        raise ValueError(f"{multiline} multiline formulas but only {staged.count('<mtable')} MathML tables")
+
+    for index, block in enumerate(protected):
+        staged = staged.replace(f"@@PROTECTED{index}@@", block, 1)
+
+    block_count = sum(kind == "block" for kind, _ in tokens)
+    return staged, block_count, len(tokens) - block_count
+
+
+def main(argv=None):
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--output", "-o", required=True, type=Path)
+    parser.add_argument("fragments", nargs="+", type=Path, help="HTML fragments in document order")
+    args = parser.parse_args(argv)
+
+    try:
+        source = "\n".join(path.read_text(encoding="utf-8") for path in args.fragments)
+        built, blocks, inline = compile_math(source)
+        args.output.write_text(built, encoding="utf-8")
+    except (OSError, UnicodeError, ValueError) as error:
+        print(f"Build failed: {error}", file=sys.stderr)
+        return 1
+
+    print(f"Wrote {args.output}: {blocks} display and {inline} inline formulas")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

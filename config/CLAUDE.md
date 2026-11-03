@@ -17,3 +17,6 @@ When I ask you to write or rewrite code comments, follow these rules. I review p
 
 The scripts I use to enforce this mechanically (trailing-period stripper, dash-bullet converter, review greps) live in the `comment-style-tools` skill.
 
+# Memory vault
+
+My memory vault lives at `/home/manu/manu-vault`. Start every vault session at `/home/manu/manu-vault/manu-vault.md` and follow the `memory-vault` skill (use `memory-vault-setup` to add projects, assets or job steps).

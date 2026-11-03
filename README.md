@@ -1,6 +1,6 @@
-# skill-factory
+# manu-skills
 
-My agent skills in one place: Clean Code, Clean Architecture, working with AI agents the way Uncle Bob does it in 2026, plus my own skills for studying, citing and code comment style. They are grouped by the need you have at that moment.
+My agent skills in one place: Clean Code, Clean Architecture, working with AI agents the way Uncle Bob does it in 2026, delegating to cheap coding agents, my memory vault, plus my own skills for studying, citing and code comment style. They are grouped by the need you have at that moment.
 
 Clean code and agent skill bodies are in English on purpose, because English costs fewer tokens. Descriptions include Spanish trigger words. Heavy material lives in `references/` or `scripts/` and loads only when needed.
 
@@ -36,6 +36,13 @@ Clean code and agent skill bodies are in English on purpose, because English cos
 | `acceptance-first-agents` | Gherkin, QA through the UI and acceptance mutation as the contract |
 | `agent-architecture-oversight` | What design stays human, agents that thrash, recommendation overload |
 | `auditing-agent-work` | The agent says "done", ran unattended, or went suspiciously fast |
+| `delegate-swarm` | Split work into small verifiable tasks and fire them at free OpenCode workers in parallel worktrees, one PR per task (`swarm` CLI in `scripts/`) |
+
+### I'm working in my memory vault
+| Skill | When |
+|---|---|
+| `memory-vault` | Catching up on a project through master files, running jobs, triaging the inbox, writing daily notes, syncing with git |
+| `memory-vault-setup` | Scaffolding the vault, or adding a project, folder, asset, job or job step with its master file |
 
 ### I'm writing a deliverable that cites sources
 | Skill | When |
@@ -45,34 +52,43 @@ Clean code and agent skill bodies are in English on purpose, because English cos
 ### I'm studying
 | Skill | When |
 |---|---|
-| `building-course-study-guides` | A full study guide for a whole course from its slide PDFs and past exams |
+| `building-course-study-guides` | A source-grounded guide from course materials and past exams; routes requested interactive practice to `socratic-tutor` and Anki decks to `active-recall-anki` |
+| `active-recall-anki` | Focused Basic or Cloze cards from study material, with a TSV syntax validator |
+| `socratic-tutor` | Interactive practice and feedback at the learner’s pace |
 
 A caveat Uncle Bob himself makes: he doesn't "trust Skill files any farther than I can throw them". Rules bias agents but don't bind them. Skills guide the agent, and what actually enforces is gates in hooks or CI. `agent-quality-gates` covers that.
 
 ## Install
 
-Clone the repo and symlink every skill into Claude Code:
+Keep this checkout as the source of truth. Codex discovers user skills in `~/.agents/skills`; Claude Code uses `~/.claude/skills`. Both can use symbolic links to the same skill folders.
+
+From the repository root, install missing links for Codex without replacing existing entries:
 
 ```bash
-git clone https://github.com/manuothatceguy/skill-factory.git && cd skill-factory
-for s in skills/*/; do ln -sfn "$PWD/$s" ~/.claude/skills/$(basename "$s"); done
+mkdir -p "$HOME/.agents/skills"
+for skill in "$PWD"/skills/*; do
+  target="$HOME/.agents/skills/${skill##*/}"
+  if [ ! -e "$target" ] && [ ! -L "$target" ]; then
+    ln -s "$skill" "$target"
+  fi
+done
 ```
 
-Only the descriptions load until a skill triggers, so having all of them installed is cheap.
+For Claude Code, use the same procedure with `~/.claude/skills`. Inspect existing entries instead of overwriting name collisions. Codex normally detects skill updates automatically; start a new session if the catalog is stale.
 
-To also use the global comment rules, back up your own `~/.claude/CLAUDE.md` first, then:
+`delegate-swarm` also ships the `swarm` CLI. Link it onto your PATH with `ln -sfn "$PWD/skills/delegate-swarm/scripts/swarm.py" "$HOME/.local/bin/swarm"`. Its `install.sh` copies the skill instead of linking it, so skip it when installing from this checkout; if an older copy already sits in `~/.claude/skills/delegate-swarm`, remove it and link this folder.
 
-```bash
-ln -sfn "$PWD/config/CLAUDE.md" ~/.claude/CLAUDE.md
-```
+`config/CLAUDE.md` holds the shared comment rules. Back up existing global instructions before linking it as `~/.codex/AGENTS.md` or `~/.claude/CLAUDE.md`. The filename is historical; the rules apply to both runtimes. Project-specific guidance belongs in the project's own `AGENTS.md`.
 
-On my machine both are symlinks, so editing a file here updates the installed skill at once. After a change: commit and push.
+The course-guide skill uses available runtime tools and models. Its detailed guidance lives in `references/`; the MathML builder takes fragment paths and an output path on the command line. Comment cleanup uses Python tokens and leaves docstrings for manual review.
+
+The repository includes an opt-in Git pre-commit hook for skill metadata, local references, and staged study artifacts. Enable it in this checkout with `git config --local core.hooksPath .githooks`. Run `python3 scripts/validate_repo.py --all` for a manual repository check, or pass a guide HTML or deck TSV path directly. The hook checks mechanical errors; source accuracy and card quality still need review. Git hooks do not run inside Codex or Claude tool calls.
 
 ## Third-party skills I use (not vendored)
 | Skill | Source | Verdict |
 |---|---|---|
 | `find-skills` | `npx skills add vercel-labs/skills@find-skills -g -y` | Keep. Finds and installs skills from skills.sh |
-| `quiz-maker` | `onewave-ai/claude-skills@quiz-maker` | Weak. A generic template with placeholders. `building-course-study-guides` already writes better exam-specific quizzes |
+| `quiz-maker` | `onewave-ai/claude-skills@quiz-maker` | Optional. The local study skills cover cards and course-specific practice; compare output quality for the task |
 | `token-efficiency` | project skill in another repo | Not worth it. 8.7K words of always-on rules and dated model advice, which costs the tokens it promises to save. `lean-agent-harness` covers the useful part |
 | React Native skills (`vercel-react-native-skills`, `react-native-best-practices`, …) | project skills in the app repo | Keep them in that project, they only matter there |
 
@@ -105,5 +121,5 @@ The clean code skills are written from scratch, synthesizing Martin (Clean Code,
 The agent skills come from Robert C. Martin's public tweets (Jan to Sep 2026) and his public repos.
 
 ## Known debts
-- None of the skills were pressure-tested with subagents (the `writing-skills` method). Do it for the ones that misfire.
-- `building-course-study-guides` has a 7K-word SKILL.md that loads whole on every trigger. Split the math pipeline, audit and gotcha sections into `references/`.
+- Most skills have not been behavior-tested in Codex. The migration checks cover portability and the Python comment helper, not every workflow.
+- The MathML builder requires pandoc; verifying exam coverage and worked answers still requires checking the course sources.

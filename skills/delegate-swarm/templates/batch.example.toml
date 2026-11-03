@@ -1,0 +1,33 @@
+# .swarm/batches/<name>.toml — one batch = one set of bullets fired together.
+batch = "auth-api"          # optional; defaults to the file name
+# base = "main"             # optional; defaults to [run].base ("current" branch)
+# tier = "fast"             # optional default tier for every task
+# capsules = []             # optional, added to every task in this batch
+
+[[task]]
+id = "login-route"
+title = "Add POST /login route"
+tier = "fast"
+files = ["src/routes/login.ts", "src/routes/login.test.ts"]
+read = ["src/routes/signup.ts"]            # pattern to copy; the worker reads only this
+goal = """
+Add a POST /login route that validates {email, password} with the existing `loginSchema`
+and returns 200 {token} via `authService.issueToken(user)`, 401 on bad credentials.
+Write tests for: success, wrong password, missing field (400).
+"""
+context = """
+- Register it like signup: `router.post("/signup", validate(signupSchema), handler)` in signup.ts.
+- `authService.verify(email, password): Promise<User | null>` lives in src/services/auth.ts.
+- Tests use supertest with `makeApp()` from test/helpers.ts.
+"""
+accept = "npx vitest run src/routes/login.test.ts"
+commit = "feat(auth): POST /login route"
+
+[[task]]
+id = "login-docs"
+title = "Document POST /login"
+files = ["docs/api/auth.md"]
+goal = "Add a 'POST /login' section to docs/api/auth.md following the existing 'POST /signup' section's format."
+accept = "grep -q '## POST /login' docs/api/auth.md"
+depends_on = ["login-route"]               # starts from login-route's branch, after it succeeds
+commit = "docs(auth): POST /login"

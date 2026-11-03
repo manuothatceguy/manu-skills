@@ -3,7 +3,7 @@
 command pandoc's MathML writer does not support and got dropped. This tests each
 formula individually and prints the culprit(s) — the ones that yield != 1 <math>.
 
-Usage: python3 find_bad_formula.py <dir-with-fragments>   (edit ORDER to match)
+Usage: python3 find_bad_formula.py <dir-with-fragments>
 
 Known offenders: mathtools extensible arrows \\xleftrightarrow{...},
 \\xrightarrow{...}. Rewrite with primitives pandoc knows:

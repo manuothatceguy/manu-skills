@@ -33,6 +33,7 @@ s = open(path).read()
 # tiene guiones bajos legítimos que el chequeo de subíndices confundiría con LaTeX
 body = re.sub(r"<math.*?</math>", "§M§", s, flags=re.S)
 body = re.sub(r"<style.*?</style>|<script.*?</script>|<pre.*?</pre>", "", body, flags=re.S)
+body = re.sub(r"<[^>]+>", " ", body)
 
 fallas = 0
 CRUDO = {

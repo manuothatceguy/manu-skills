@@ -1,57 +1,32 @@
 ---
 name: comment-style-tools
-description: Helper scripts for enforcing Manu's code comment style — strip trailing periods from comments and docstrings, convert dash bullets to tab bullets, and grep for style violations. Use when cleaning up comments in a file after writing or rewriting them, or when the user asks to enforce the comment style rules.
+description: Use when writing or cleaning up Manu's code comments, checking comment punctuation and bullet style, or enforcing the comment rules in the active agent instructions.
 ---
 
-# Comment style helper scripts
+# Comment style tools
 
-The style rules themselves live in `~/.claude/CLAUDE.md` and are always loaded. This file holds the tooling to apply them mechanically.
+Follow the comment rules in the active instructions. Codex uses `~/.codex/AGENTS.md`; Claude Code uses `~/.claude/CLAUDE.md`. The shared source is `../../config/CLAUDE.md` relative to this skill directory. User and project instructions take precedence.
 
-## Strip the trailing period from every comment
+## Python comments
 
-Keeps periods between sentences, handles `#` comments and triple-quoted docstrings. Pass file paths as arguments:
-
-```python
-# usage: python3 strip_comment_period.py file1.py file2.py
-import re, sys
-
-def strip_period(text):
-    s = text.rstrip()
-    if s.endswith('.') and not s.endswith('..'):
-        s = s[:-1]
-    return s
-
-for path in sys.argv[1:]:
-    out, in_doc = [], False
-    for line in open(path).read().split("\n"):
-        stripped = line.strip()
-        if stripped == '"""':
-            in_doc = not in_doc; out.append(line); continue
-        if in_doc:
-            out.append(strip_period(line)); continue
-        if stripped.startswith('"""') and stripped.endswith('"""') and stripped.count('"""') >= 2:
-            m = re.match(r'^(.*)\.("""\s*)$', line)
-            out.append(m.group(1) + '"""' if m else line); continue
-        if '#' in line:
-            i = line.index('#')
-            out.append(line[:i] + strip_period(line[i:])); continue
-        out.append(line)
-    open(path, "w").write("\n".join(out))
-```
-
-## Convert dash bullets into one-tab bullets
-
-Turns `# - item` into `#\titem`:
+Resolve `scripts/clean_comments.py` relative to this skill directory. Check first:
 
 ```bash
-sed -i 's/^\( *\)# - /\1#\t/' FILE.py
+python3 scripts/clean_comments.py path/to/file.py
 ```
 
-## Review passes
+Exit 1 means comments need changes. Apply them with `--write`, then inspect the diff. The script strips one final period, preserves ellipses and internal periods, and converts comment dash bullets into one-tab bullets. It parses Python before writing and changes only COMMENT tokens, preserving strings, encoding, and line endings. All input files are checked before any writes.
 
-Find style violations to fix by hand:
+Docstrings are deliberately left untouched. Review them manually because they can contain doctests and meaningful string data. Use language-aware tools for other languages. Do not apply Python tokenization to JavaScript, shell, or mixed-language files.
+
+## Review by hand
+
+Check first-person singular, plain language, precise technical terms, one idea per line, no rhetorical labels or Markdown, and one space before inline comments. The helper checks punctuation and bullets only; it does not enforce those semantic rules.
+
+## Validation
 
 ```bash
-grep -nE '#[^"]*;' FILE.py          # semicolons inside comments
-grep -nE "\bwe\b|\bus\b|\bour\b" FILE.py   # leftover "we/us/our" when the voice should be first person singular
+python3 -m unittest discover -s tests
 ```
+
+Run from this skill directory. Tests cover literal strings, docstrings, inline comments, bullets, ellipses, CRLF, and incomplete Python.

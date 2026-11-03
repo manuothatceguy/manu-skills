@@ -33,7 +33,7 @@ For the agent to deviate from the desired behavior, it would have to change seve
 - **Verify the translator.** It can generate tests that pass while testing nothing. Acceptance mutation catches that: mutate the Examples values in the IR and expect failures (github.com/unclebob/Acceptance-Pipeline-Specification).
 
 ## QA through the UI
-Agents can't see the screen. A QA agent allowed to call the model's API will pass while the feature isn't connected to buttons or keys. Force QA scripts to use real UI events and add a checker that rejects API calls in them. UI tests are fragile, but agents don't mind rewriting them.
+When browser or computer-use tools are available, inspect the rendered screen and exercise real UI events. API-only checks cannot establish that buttons or keys are wired correctly. Keep API tests as a separate layer. If visual tools are unavailable, report that UI verification remains incomplete.
 
 ## Just enough spec
 Spec-driven development risks big design up front. Write only enough scenarios for the stories in this iteration, co-author them with the agent, and keep final approval with the human. Commit them to source control and evolve them with the product.
