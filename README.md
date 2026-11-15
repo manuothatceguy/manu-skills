@@ -38,6 +38,11 @@ Clean code and agent skill bodies are in English on purpose, because English cos
 | `auditing-agent-work` | The agent says "done", ran unattended, or went suspiciously fast |
 | `delegate-swarm` | Split work into small verifiable tasks and fire them at free OpenCode workers in parallel worktrees, one PR per task (`swarm` CLI in `scripts/`) |
 
+### I'm writing or reviewing a skill
+| Skill | When |
+|---|---|
+| `designing-skills` | Designing a new skill or auditing one an agent generated: dated prompting, leaked context, trivialities and agentic antipatterns, with a `lint_skill.py` that flags the mechanical ones |
+
 ### I'm working in my memory vault
 | Skill | When |
 |---|---|
