@@ -1,48 +1,32 @@
 # manu-skills
 
-My personal agent skills in one place: delegating to cheap coding agents, designing and linting skills, my memory vault, studying, precise citations, and my code comment style. They are grouped by the need you have at that moment.
-
-Heavy material lives in `references/` or `scripts/` and loads only when needed.
-
-## Catalog by need
-
-### I'm writing code
-| Skill | When |
-|---|---|
-| `comment-style-tools` | Enforcing my comment style mechanically (rules in `config/CLAUDE.md`) |
-
-### I'm delegating work to cheap agents
-| Skill | When |
-|---|---|
-| `delegate-swarm` | Split work into small verifiable tasks and fire them at free OpenCode workers in parallel worktrees, one PR per task (`swarm` CLI in `scripts/`) |
-
-### I'm writing or reviewing a skill
-| Skill | When |
-|---|---|
-| `designing-skills` | Designing a new skill or auditing one an agent generated: dated prompting, leaked context, trivialities and agentic antipatterns, with a `lint_skill.py` that flags the mechanical ones |
-
-### I'm working in my memory vault
-| Skill | When |
-|---|---|
-| `memory-vault` | Catching up on a project through master files, running jobs, triaging the inbox, writing daily notes, syncing with git |
-| `memory-vault-setup` | Scaffolding the vault, or adding a project, folder, asset, job or job step with its master file |
-
-### I'm writing a deliverable that cites sources
-| Skill | When |
-|---|---|
-| `precise-citations` | Any report, PR or answer that cites a file, line, function, config value or CVE |
-
-### I'm studying
-| Skill | When |
-|---|---|
-| `building-course-study-guides` | A source-grounded guide from course materials and past exams; routes Anki decks to `active-recall-anki` |
-| `active-recall-anki` | Focused Basic or Cloze cards from study material, with a TSV syntax validator |
+A curated collection of agent skills for Codex, Claude Code, and any agent compatible with the [Agent Skills](https://skills.sh) format. Each skill follows progressive disclosure: concise instructions in `SKILL.md`, with heavy references and deterministic validators in `references/` and `scripts/`.
 
 ## Install
 
-Keep this checkout as the source of truth. Codex discovers user skills in `~/.agents/skills`; Claude Code uses `~/.claude/skills`. Both can use symbolic links to the same skill folders.
+### Via `skills.sh` (recommended)
 
-From the repository root, install missing links for Codex without replacing existing entries:
+Install all skills or pick specific ones interactively:
+
+```bash
+npx skills add manuothatceguy/manu-skills
+```
+
+Install a single skill:
+
+```bash
+npx skills add manuothatceguy/manu-skills --skill designing-skills
+```
+
+List all discoverable skills without installing:
+
+```bash
+npx skills add manuothatceguy/manu-skills --list
+```
+
+### From a local checkout (symlinks)
+
+To develop locally and keep this repository as the source of truth, symlink each skill into `~/.agents/skills` (Codex) or `~/.claude/skills` (Claude Code):
 
 ```bash
 mkdir -p "$HOME/.agents/skills"
@@ -54,47 +38,75 @@ for skill in "$PWD"/skills/*; do
 done
 ```
 
-For Claude Code, use the same procedure with `~/.claude/skills`. Inspect existing entries instead of overwriting name collisions. Codex normally detects skill updates automatically; start a new session if the catalog is stale.
+Repeat with `$HOME/.claude/skills` for Claude Code.
 
-`delegate-swarm` also ships the `swarm` CLI. Link it onto your PATH with `ln -sfn "$PWD/skills/delegate-swarm/scripts/swarm.py" "$HOME/.local/bin/swarm"`. Its `install.sh` copies the skill instead of linking it, so skip it when installing from this checkout; if an older copy already sits in `~/.claude/skills/delegate-swarm`, remove it and link this folder.
+**Optional extras:**
+- **`swarm` CLI (`delegate-swarm`):** link onto your `PATH` with:
+  ```bash
+  ln -sfn "$PWD/skills/delegate-swarm/scripts/swarm.py" "$HOME/.local/bin/swarm"
+  ```
+- **Shared global instructions (`config/CLAUDE.md`):** contains the comment-style rules used alongside `comment-style-tools`. Back up your existing global instructions before linking it to `~/.codex/AGENTS.md` or `~/.claude/CLAUDE.md`.
 
-`config/CLAUDE.md` holds the shared comment rules. Back up existing global instructions before linking it as `~/.codex/AGENTS.md` or `~/.claude/CLAUDE.md`. The filename is historical; the rules apply to both runtimes. Project-specific guidance belongs in the project's own `AGENTS.md`.
+## Skills
 
-The course-guide skill uses available runtime tools and models. Its detailed guidance lives in `references/`; the MathML builder takes fragment paths and an output path on the command line. Comment cleanup uses Python tokens and leaves docstrings for manual review.
+### Engineering & Agent Workflows
 
-The repository includes an opt-in Git pre-commit hook for skill metadata, local references, and staged study artifacts. Enable it in this checkout with `git config --local core.hooksPath .githooks`. Run `python3 scripts/validate_repo.py --all` for a manual repository check, or pass a guide HTML or deck TSV path directly. The hook checks mechanical errors; source accuracy and card quality still need review. Git hooks do not run inside Codex or Claude tool calls.
-
-## Third-party skills I use (not vendored)
-| Skill | Source | Verdict |
+| Skill | Description | Tools / Scripts |
 |---|---|---|
-| `find-skills` | `npx skills add vercel-labs/skills@find-skills -g -y` | Keep. Finds and installs skills from skills.sh |
-| `quiz-maker` | `onewave-ai/claude-skills@quiz-maker` | Optional. The local study skills cover cards and course-specific practice; compare output quality for the task |
-| `token-efficiency` | project skill in another repo | Not worth it. 8.7K words of always-on rules and dated model advice, which costs the tokens it promises to save |
-| React Native skills (`vercel-react-native-skills`, `react-native-best-practices`, …) | project skills in the app repo | Keep them in that project, they only matter there |
+| [`delegate-swarm`](skills/delegate-swarm/SKILL.md) | Orchestrate cheap/free coding agents (OpenCode by default) as single-task workers in parallel git worktrees, shipping one PR per task. | `scripts/swarm.py`, `templates/`, `capsules/` |
+| [`designing-skills`](skills/designing-skills/SKILL.md) | Design new skills or audit existing ones against a smell catalog (dated prompting, leaked context, trivialities, agentic antipatterns). | `scripts/lint_skill.py` |
+| [`precise-citations`](skills/precise-citations/SKILL.md) | Enforce source verification before citing file paths, line numbers, quoted code, config values, or CVEs in deliverables. | — |
+| [`comment-style-tools`](skills/comment-style-tools/SKILL.md) | Enforce personal code comment rules mechanically on Python files while leaving docstrings untouched. | `scripts/clean_comments.py` |
 
-## Existing skills worth installing as they are
+### Knowledge & Memory Vault
 
-Found on skills.sh, Vercel's skills registry, with `npx skills find`. Install counts were current at the time of the search.
-
-| Skill | Installs | Why |
+| Skill | Description | Tools / Scripts |
 |---|---|---|
-| `mattpocock/skills@tdd` | 901K | Short, strong TDD loop with seams and vertical slices |
-| `vercel-labs/agent-skills@vercel-composition-patterns` | 336K | Clean Code for React components (no boolean props, compound components) |
-| `vercel-labs/agent-skills@vercel-react-best-practices` | 713K | React/Next performance rules |
-| `wondelai/skills@clean-architecture` | 5.8K | Longer version with scoring and references |
-| `wondelai/skills@working-with-legacy-code` | 2.2K | Full Feathers treatment |
-| `amelnagdy/guard-skills@clean-code-guard` | 3.9K | Very complete AI-code guard, heavier in tokens |
-| `ccheney/robust-skills@clean-ddd-hexagonal` | 4.4K | Compact DDD/hexagonal router with references |
-| `ciembor/agent-rules-books@clean-code` | 40 | Minimal mini/nano rule files, good for tight budgets |
+| [`memory-vault`](skills/memory-vault/SKILL.md) | Operate a git-backed personal memory vault: catch up via master files, run jobs, triage inbox, and write timestamped daily notes. | — |
+| [`memory-vault-setup`](skills/memory-vault-setup/SKILL.md) | Scaffold a memory vault and add projects, folders, assets, jobs, or job steps with their master files. | — |
 
-Don't stack several skills that cover the same need, because they compete for triggering and waste tokens.
+### Study & Active Recall
 
-## Research
-- `research/uncle-bob-ai-timeline.md`: dated timeline of Robert C. Martin's AI and agent tweets, with short quotes and links.
-- `research/harvest/harvest.py`: the script that harvested his timeline through api.fxtwitter.com.
+| Skill | Description | Tools / Scripts |
+|---|---|---|
+| [`building-course-study-guides`](skills/building-course-study-guides/SKILL.md) | Build source-grounded offline HTML study guides from course slides, textbooks, and past exams; routes Anki decks to `active-recall-anki`. | `scripts/build_mathml.py`, `scripts/verify_build.py`, `scripts/dump_section.py`, `scripts/find_bad_formula.py` |
+| [`active-recall-anki`](skills/active-recall-anki/SKILL.md) | Generate focused Basic and Cloze spaced-repetition flashcards as 3-column Anki TSV files. | `scripts/validate_deck.py` |
 
-Kept local and not published: the full text of the 547 harvested tweets and copies of his repos (see `.gitignore`). Rerun the harvester or clone github.com/unclebob to rebuild them.
+## Repository Structure
 
-## Known debts
-- Most skills have not been behavior-tested in Codex. The migration checks cover portability and the Python comment helper, not every workflow.
-- The MathML builder requires pandoc; verifying exam coverage and worked answers still requires checking the course sources.
+```text
+.
+├── config/          # Shared global agent instructions (CLAUDE.md)
+├── scripts/         # Repository validator (validate_repo.py)
+├── skills/          # Discoverable skills (skills/<name>/SKILL.md)
+├── tests/           # Repository-level test suite
+└── .githooks/       # Opt-in pre-commit hook
+```
+
+## Validation & Testing
+
+Validate all skill frontmatter and local references:
+
+```bash
+python3 scripts/validate_repo.py --all
+```
+
+Run the skill-level unit tests:
+
+```bash
+python3 -m unittest discover -s skills/active-recall-anki/tests
+python3 -m unittest discover -s skills/comment-style-tools/tests
+python3 -m unittest discover -s skills/designing-skills/tests
+```
+
+Run the skill smell linter on any skill directory:
+
+```bash
+python3 skills/designing-skills/scripts/lint_skill.py skills/<skill-name>
+```
+
+Enable the opt-in pre-commit hook to validate staged skills and study artifacts automatically:
+
+```bash
+git config --local core.hooksPath .githooks
+```
