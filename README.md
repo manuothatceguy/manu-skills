@@ -72,6 +72,19 @@ Repeat with `$HOME/.claude/skills` for Claude Code.
 | [`building-course-study-guides`](skills/building-course-study-guides/SKILL.md) | Build source-grounded offline HTML study guides from course slides, textbooks, and past exams; routes Anki decks to `active-recall-anki`. | `scripts/build_mathml.py`, `scripts/verify_build.py`, `scripts/dump_section.py`, `scripts/find_bad_formula.py` |
 | [`active-recall-anki`](skills/active-recall-anki/SKILL.md) | Generate focused Basic and Cloze spaced-repetition flashcards as 3-column Anki TSV files. | `scripts/validate_deck.py` |
 
+## Companion Skill Suites
+
+General engineering, architecture, TDD, code review, refactoring, and UI workflows are intentionally not duplicated here — they are covered by these upstream suites via [`skills.sh`](https://skills.sh):
+
+| Suite | Covers | Install |
+|---|---|---|
+| **Matt Pocock** (`mattpocock/skills`) | Engineering workflows, TDD, codebase design, domain modeling, code review, bug diagnosis, PRs | `npx skills add mattpocock/skills` |
+| **pstack by poteto / Lauren Tan** (`cursor/plugins` → `pstack`) | Architecture, adversarial review, verification skills, refactoring principles, multi-agent playbooks | `npx skills add https://github.com/cursor/plugins/tree/main/pstack` |
+| **CaldoAI** (`caldoai/skills`) | Whole-codebase untangling and test pruning | `npx skills add caldoai/skills` |
+| **UIZZE** (`uizze/uizze`) | Real-screen-grounded UI design, anti-UI-slop, image-to-UI | `npx skills add uizze/uizze` |
+| **Vercel Skills** (`vercel-labs/skills`) | Discovering and installing skills from `skills.sh` (`find-skills`) | `npx skills add vercel-labs/skills --skill find-skills` |
+| **UI Polish** (`make-interfaces-feel-better`, `unslop-ui`) | Micro-interactions, visual details, and interface copy cleanup | `npx skills add jakubkrehel/make-interfaces-feel-better` · `npx skills add felipebasurto/unslop-ui` |
+
 ## Repository Structure
 
 ```text
