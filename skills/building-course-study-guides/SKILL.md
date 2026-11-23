@@ -20,7 +20,7 @@ Create a clear, source-grounded study guide in the format the learner requests. 
 
 At planning time and whenever the learner changes the deliverable, check which companion skills apply. Load each matching skill for its part of the work; this guide keeps responsibility for source selection, course coverage, and fact checking.
 
-- **Guided practice:** If the learner wants tutoring, oral-exam rehearsal, step-by-step problem solving, or guided exercises within the guide, use `socratic-tutor` for the prompts, hints, and feedback. Anchor them in the course material.
+- **Guided practice:** If the learner wants tutoring, oral-exam rehearsal, step-by-step problem solving, or guided exercises within the guide, work interactively with focused prompts, hints, and feedback anchored in the course material.
 - **Spaced review:** If the deliverable includes flashcards, an Anki deck, or a spaced-repetition practice set, use `active-recall-anki` for card design and TSV validation. Check every card against the source before delivery.
 - **Separate quiz:** If the learner asks for a standalone quiz and `quiz-maker` is available, use it for question formats. Check its answer key and coverage against the course sources.
 
