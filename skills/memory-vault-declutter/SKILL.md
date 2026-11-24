@@ -32,12 +32,13 @@ Git is the safety net. Nothing is lost for good, so removal is fine once the use
 
 **Daily notes older than 30 days.** Fold them into one digest per month.
 01. Read each old note. Keep in the digest: the decision and its why, the commit hashes, links to code or assets, and any Next item still open.
-02. Drop from the digest: step-by-step narration, intermediate attempts, anything a later note or the project master file already says.
-03. Write `01-daily-notes/archive/YYYY-MM.md`, grouped by project, one bullet per kept fact with its original date and time. Create `archive/` with its own master file if it does not exist, and list it in `01-daily-notes.md`.
-04. Retarget every link that pointed at a folded note to the digest. Find them with `grep -rln "<note name>" <vault>` before removing anything, since master files, other notes and a project's own vault inside its repo can all link to them. Re-run the audit afterwards to catch misses.
-05. Remove the folded notes and their rows from the index in the same commit, and renumber the index 01..N. Name the removed range in the commit body so `git log` finds them.
-06. The three newest notes of every project stay, however old. The audit already leaves them out.
-07. If a project keeps its own vault in its repo, check whether its notes already live there. Copies need no digest here, only the pointer in the project's master file.
+02. Copy verbatim any list of choices Manu has not confirmed yet ("Decisions for Manu", "open for review", "Review findings left open") into a last section of the digest, keyed by ticket. Summarising them loses the detail he needs to review them.
+03. Drop from the digest: step-by-step narration, intermediate attempts, anything a later note or the project master file already says.
+04. Write `01-daily-notes/archive/YYYY-MM.md`, grouped by project, one bullet per kept fact with its original date and time. Create `archive/` with its own master file if it does not exist, and list it in `01-daily-notes.md`.
+05. Retarget every link that pointed at a folded note to the digest. Find them with `grep -rln "<note name>" <vault>` before removing anything, since master files, other notes and a project's own vault inside its repo can all link to them. Re-run the audit afterwards to catch misses.
+06. Remove the folded notes and their rows from the index in the same commit, and renumber the index 01..N. Name the removed range in the commit body so `git log` finds them.
+07. The three newest notes of every project stay, however old. The audit already leaves them out.
+08. If a project keeps its own vault in its repo, check whether its notes already live there. Copies need no digest here, only the pointer in the project's master file.
 
 **Open Next items.** The audit lists them from the old notes. First sort them with evidence: later notes, `git log`, the code, and `gh issue list --state all` for `#NN` items. An item that names a GitHub issue is tracked there and needs no copy. For the rest, decide with Manu only on the ones the evidence does not settle: done (drop), still open (carry into the owning project's master file under Current status or its roadmap), or abandoned (drop with a one-line reason in the digest).
 

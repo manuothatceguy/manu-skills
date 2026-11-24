@@ -103,7 +103,7 @@ def folders_without_master(vault):
 
 
 def uncovered_files(vault):
-    # a file counts as covered when its folder master file mentions its name
+    # I count a file as covered when its folder master file mentions its name
     found = []
     for path in walk(vault):
         if not path.is_dir():
@@ -125,12 +125,13 @@ def index_mismatch(vault):
     index = folder / "01-daily-notes.md"
     if not index.exists():
         return []
-    text = index.read_text(encoding="utf-8", errors="replace")
+    # I read only the rows after the Index heading, because a note linked from Current status alone used to count as listed
+    text = index.read_text(encoding="utf-8", errors="replace").split("### Index", 1)[-1].split("\n## ", 1)[0]
     listed = set(re.findall(r"\[(\d{4}-\d{2}-\d{2}_[0-9a-z_-]+)\]", text))
     on_disk = {p.stem for p in folder.glob("*.md") if NOTE_NAME.match(p.name)}
     lines = [f"note not in index: {name}" for name in sorted(on_disk - listed)]
     lines += [f"index entry without file: {name}" for name in sorted(listed - on_disk)]
-    numbers = [int(n) for n in re.findall(r"^(\d+)\. \[\d{4}-", text.split("### Index", 1)[-1], re.M)]
+    numbers = [int(n) for n in re.findall(r"^(\d+)\. \[\d{4}-", text, re.M)]
     if numbers and numbers != list(range(1, len(numbers) + 1)):
         lines.append(f"index numbering is not 01..{len(numbers):02d} in order, renumber it")
     return lines
