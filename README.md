@@ -64,6 +64,7 @@ Repeat with `$HOME/.claude/skills` for Claude Code.
 |---|---|---|
 | [`memory-vault`](skills/memory-vault/SKILL.md) | Operate a git-backed personal memory vault: catch up via master files, run jobs, triage inbox, and write timestamped daily notes. | — |
 | [`memory-vault-setup`](skills/memory-vault-setup/SKILL.md) | Scaffold a memory vault and add projects, folders, assets, jobs, or job steps with their master files. | — |
+| [`memory-vault-declutter`](skills/memory-vault-declutter/SKILL.md) | Routine pass that folds old daily notes into monthly digests, carries open items forward, and repairs links and master files so the vault stays light. | `scripts/audit_vault.py` |
 
 ### Study & Active Recall
 
