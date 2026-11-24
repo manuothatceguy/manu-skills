@@ -40,13 +40,25 @@ def inbox(vault):
     return [p.name for p in sorted(folder.iterdir()) if p.name != "00-inbox.md"]
 
 
-def old_notes(vault, days):
+def note_projects(path):
+    text = path.read_text(encoding="utf-8", errors="replace")
+    return set(re.findall(r"\*\*(?:Project|Job / folder):\*\*\s*\[(\d{2}-[a-z0-9-]+)\]", text))
+
+
+def old_notes(vault, days, keep):
+    # I keep the newest notes of every project even when they are old, so a project that went quiet still has its recent history
     folder = vault / "01-daily-notes"
     cutoff = datetime.now() - timedelta(days=days)
+    notes = sorted((p for p in folder.glob("*.md") if NOTE_NAME.match(p.name)), reverse=True) if folder.is_dir() else []
+    kept, seen = set(), {}
+    for path in notes:
+        for project in note_projects(path):
+            seen[project] = seen.get(project, 0) + 1
+            if seen[project] <= keep:
+                kept.add(path)
     found = []
-    for path in sorted(folder.glob("*.md")) if folder.is_dir() else []:
-        match = NOTE_NAME.match(path.name)
-        if match and datetime.strptime(match.group(1), "%Y-%m-%d") < cutoff:
+    for path in sorted(notes):
+        if path not in kept and datetime.strptime(NOTE_NAME.match(path.name).group(1), "%Y-%m-%d") < cutoff:
             found.append(path)
     return found
 
@@ -118,6 +130,9 @@ def index_mismatch(vault):
     on_disk = {p.stem for p in folder.glob("*.md") if NOTE_NAME.match(p.name)}
     lines = [f"note not in index: {name}" for name in sorted(on_disk - listed)]
     lines += [f"index entry without file: {name}" for name in sorted(listed - on_disk)]
+    numbers = [int(n) for n in re.findall(r"^(\d+)\. \[\d{4}-", text.split("### Index", 1)[-1], re.M)]
+    if numbers and numbers != list(range(1, len(numbers) + 1)):
+        lines.append(f"index numbering is not 01..{len(numbers):02d} in order, renumber it")
     return lines
 
 
@@ -147,6 +162,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("vault", type=Path)
     parser.add_argument("--days", type=int, default=30, help="daily notes older than this are rollup candidates")
+    parser.add_argument("--keep", type=int, default=3, help="newest notes kept per project however old")
     args = parser.parse_args()
     vault = args.vault.expanduser().resolve()
     if not vault.is_dir():
@@ -155,8 +171,8 @@ def main():
     print(f"# Vault audit of {vault}")
     section("Uncommitted changes (commit or stop before decluttering)", git_dirty(vault))
     section("Inbox items still unsorted", inbox(vault))
-    notes = old_notes(vault, args.days)
-    section(f"Daily notes older than {args.days} days (rollup candidates)", [p.name for p in notes])
+    notes = old_notes(vault, args.days, args.keep)
+    section(f"Daily notes older than {args.days} days, minus the {args.keep} newest per project (rollup candidates)", [f"{p.name} {','.join(sorted(note_projects(p))) or 'no project'}" for p in notes])
     carried = [f"{p.name}: {item}" for p in notes for item in open_next(p)]
     section("Open Next items inside those old notes (decide before rolling up)", carried)
     section("Daily note index mismatches", index_mismatch(vault))
